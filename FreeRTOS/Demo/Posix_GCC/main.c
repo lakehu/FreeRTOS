@@ -81,6 +81,7 @@
     #define BUILD         "./"
 #endif
 
+#define  USER_DEMO  BLINKY_DEMO
 /* Demo type is passed as an argument */
 #ifdef USER_DEMO
     #define     mainSELECTED_APPLICATION    USER_DEMO
