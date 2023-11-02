@@ -2,18 +2,22 @@
 # Copyright 2022 NXP.
 #
 
+ifeq ($(OS),Windows_NT)
 #Path to Tool Directory (NXP GCC 9.2 ARM64)
 CrossToolDir ?= C:/NXP/S32DS.3.4/S32DS/build_tools/gcc_v9.2/gcc-9.2-arm64-eabi
+else
+CrossToolDir ?= /home/uie75906/opt/gcc-arm-9.2-2019.12-x86_64-aarch64-none-elf
+endif
 #Path to FreeRtos Directory
 OsPath ?= ../..
 OutDir := Output
 
 
-AS := $(CrossToolDir)/bin/aarch64-none-elf-gcc.exe
-CC := $(CrossToolDir)/bin/aarch64-none-elf-gcc.exe
-LD := $(CrossToolDir)/bin/aarch64-none-elf-gcc.exe
-CP := $(CrossToolDir)/bin/aarch64-none-elf-objcopy.exe
-OD := $(CrossToolDir)/bin/aarch64-none-elf-objdump.exe
+AS := $(CrossToolDir)/bin/aarch64-none-elf-gcc
+CC := $(CrossToolDir)/bin/aarch64-none-elf-gcc
+LD := $(CrossToolDir)/bin/aarch64-none-elf-gcc
+CP := $(CrossToolDir)/bin/aarch64-none-elf-objcopy
+OD := $(CrossToolDir)/bin/aarch64-none-elf-objdump
 
 
 OSCFLAGS := -std=c99 -Os -funsigned-char -fstack-usage -fdump-ipa-all -fomit-frame-pointer \
