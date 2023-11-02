@@ -1,0 +1,154 @@
+;
+; Copyright 2022 NXP.
+;
+
+PRIVATE &ppd
+&ppd=OS.PPD()
+
+AREA
+RESet
+trace.disable
+system.down
+sys.Reset
+symbol.sourcepath.reset
+SYStem.CPU S32G274A-A53
+core.assign 1
+SYStem.config.debugporttype JTAG
+SYStem.Option TRST OFF
+trace.DISABLE 
+ETM.OFF
+ITM.OFF
+SYStem.JtagClock 40MHz
+sys.Option DUALPORT on
+sys.memaccess DAP
+sys.mode prepare
+
+sys.MemAccess AXI
+
+GOSUB InitSramEccViacontroller
+
+;; Writing loop to self instruction to memory
+D.S eaxi:0x34000000 %LE %Long 0x34000100
+D.S eaxi:0x34000004 %LE %Long 0x34000025
+D.S eaxi:0x34000024 %LE %Long 0xFFFEF7FF
+
+GOSUB EnableA53_0
+GOSUB DisableSWTWatchdog
+
+
+SYStem.Option DUALPORT ON
+sys.attach
+break
+
+Data.Load.Elf "./Output/image.elf"  /GLOBTYPES /AnySym
+
+list
+
+go main
+
+v.w ullErrorFound ui32_ms_cnt
+
+TASK.CONFIG ~~/demo/arm/kernel/freertos/freertos.t32       ; load FreeRTOS awareness
+MENU.ReProgram ~~/demo/arm/kernel/freertos/freertos.men    ; load FreeRTOS menu
+
+ENDDO
+
+DisableSWTWatchdog:
+(
+    PRIVATE &index
+    &index=0
+    WHILE &index<4.
+    (
+      Data.Set eaxi:0x40100010+(&index*0x4000) %Long 0x0000C520
+      Data.Set eaxi:0x40100010+(&index*0x4000) %Long 0x0000D928
+      Data.Set eaxi:0x40100000+(&index*0x4000) %Long 0xFF000000
+      &index=&index+1
+    )
+
+    &index=0
+    WHILE &index<4.
+    (
+      Data.Set eaxi:0x40200010+(&index*0x4000) %Long 0x0000C520
+      Data.Set eaxi:0x40200010+(&index*0x4000) %Long 0x0000D928
+      Data.Set eaxi:0x40200000+(&index*0x4000) %Long 0xFF000000
+      &index=&index+1
+    )
+
+    PRINT "Disabled SWT"
+    RETURN
+)
+
+InitSramEccViacontroller:
+(
+    ;Initialize the RAM using OCPSRAMC[PRAMCR:INITREQ] controller.  ;SRAMC_0
+    D.S axi:0x4019C00C %LE %Long 0xFFFFFFFF ; clear all the errors, PRAMSR
+    ;PER.Set.simple eaxi:0x4019C008 %Long 0x3fff  ; range 0x34000000--0x343FFFFF
+    D.S axi:0x4019C000 %LE %Long 0x00000001
+    ;Initialize the RAM using OCPSRAMC[PRAMCR:INITREQ] controller.  ;SRAMC_1
+    D.S axi:0x401A000C %LE %Long 0xFFFFFFFF ; clear all the errors, PRAMSR
+    ;PER.Set.simple eaxi:0x401A0008 %Long 0x3fff  ; range 0x34000000--0x343FFFFF
+    D.S axi:0x401A0000 %LE %Long 0x00000001
+
+    WHILE ((data.long(eaxi:0x4019C00C)&0x00000001)==0x00000000)      
+    (
+    ; wait for DMA DONE bit to be set
+    )
+    PRINT "SRAM initialised ECC by SRAM controller."
+    RETURN
+)
+
+EnableA53_0:
+(
+    Data.Set eaxi:0x4007C400 %Long 0x0700000F		; Ensure NCORE is disabled
+    WAIT (Data.Long(eaxi:0x4007C400)&0x0700000F)==0x0700000F
+
+    ; Sequence taken from S32G RM Rev1 Draft P - 28.12.4 Software Reset Partition Turn-On Flow Chart
+    
+    ; Enable partition 1 clock
+
+    Data.Set eaxi:0x40088300 %Long 0x00000005     ; MC_ME.PRTN1_PCONF = 0x5, leave OSSE set, set PCE
+    Data.Set eaxi:0x40088304 %Long 0x00000001     ; MC_ME.PRTN1_PUPD = 0x1, trigger partition clock update
+    ; Mode change
+    Data.Set eaxi:0x40088000 %Long 0x00005AF0     ; MC_ME.CTL_KEY
+    Data.Set eaxi:0x40088000 %Long 0x0000A50F     ; MC_ME.CTL_KEY
+    ; Wait until clock is active (MC_ME_PRTN1_STAT[PCS] == 1)
+    WAIT (Data.Long(eaxi:0x40088308)&0x00000001)==0x00000001  ; MC_ME.PRTN1_STAT[PCS] == 1
+
+    ; Enable the XBAR interface
+
+    ; Unlocking the RDC register
+    Data.Set eaxi:0x40080004 %Long 0x8000000F     ; RDC.RD1_CTRL_REG[RD1_CTRL_UNLOCK] = 1
+    ; Writing bit3 with 0 to enable XBAR interface
+    Data.Set eaxi:0x40080004 %Long 0x80000007     ;  RDC.RD1_CTRL_REG[RD1_INTERCONNECT_INTERFACE_DISABLE] = 0
+    ; Polling for XBAR interface to get enabled
+    WAIT (Data.Long(eaxi:0x40080084))==0x00000000 ; RDC.RD1_STAT_REG
+
+    ; Releasing partition reset for partition 1
+    Data.Set eaxi:0x40078048 %Long 0xFFFFFFFE ; partition 1: MC_RGM.PRST1_0[PERIPH_64_RST] = 1
+    WAIT (Data.Long(eaxi:0x40078148)&0x00000001)==0x00000001  ; RGM.PSTAT1_0[PERIPH_64_STAT] == 0, reset released for partition 1 
+
+    ; Disabling partition output safe stating via OSSE bit
+    Data.Set eaxi:0x40088300 %Long 0x00000001 ; MC_ME.PRTN1_PCONF[OSSE] = 0, clear OSSE, leave PCE set
+    Data.Set eaxi:0x40088304 %Long 0x00000004 ; MC_ME.PRTN1_PUPD[OSSUD] = 1, trigger partition safe state update
+    ; Mode change
+    Data.Set eaxi:0x40088000 %Long 0x00005AF0 ; MC_ME.CTL_KEY
+    Data.Set eaxi:0x40088000 %Long 0x0000A50F ; MC_ME.CTL_KEY
+    ; Poll MC_ME for OSS status
+    WAIT (Data.Long(eaxi:0x40088308)&0x00000001)==0x00000001  ; MC_ME.PRTN1_STAT[OSSS] == 0
+
+    ; Core enable CA53_0
+    Data.Set eaxi:0x4008834C %Long 0x34020000 ; MC_ME.PRTN1_CORE0_ADDR
+    Data.Set eaxi:0x40088340 %Long 0x00000001 ; MC_ME.PRTN1_CORE0_PCONF[CCE] = 1
+    Data.Set eaxi:0x40088344 %Long 0x00000001 ; MC_ME.PRTN1_CORE0_PUPD[CCUPD] = 1
+    ; Mode change
+    Data.Set eaxi:0x40088000 %Long 0x00005AF0
+    Data.Set eaxi:0x40088000 %Long 0x0000A50F
+    ; Poll CA53_0/CA53_1 clock process status
+    WAIT (Data.Long(eaxi:0x40088348)&0x00000001)==0x00000001 ; MC_ME.PRTN1_CORE0_STAT[CCS] == 1
+
+    ; Releasing partition reset from MC_RGM for CA53_0
+    Data.Set eaxi:0x40078048 %Long 0xFFFFFFFC ; MC_RGM.PRST1_0[PERIPH_65_RST] = 0. MC_RGM.PRST1_0[PERIPH_64_RST] = 0
+    WAIT (Data.Long(eaxi:0x40078148)&0x00000003)==0x00000000  ; RGM.PSTAT1_0[PERIPH_64_STAT]
+
+    RETURN
+)

@@ -1,0 +1,117 @@
+*******************************************************************************
+NXP FreeRTOS v10.4.6/S32SG2XX 0.8.0 CD1
+31 Mar 2022
+
+NXP and the NXP logo are trademarks of NXP Semiconductors.
+Copyright 2022 NXP
+*******************************************************************************
+
+This package contains NXP FreeRTOS/S32G2XX A53 0.8.0 CD1 Release.
+
+It is strongly recommended that the following compiler/version is used:
+- GNU Tools for ARM64 processors: aarch64-none-elf-gcc (BLD = 1649) 9.2.0 20190812
+(build.sh rev=gaf57174 s=F920 -i /opt/freescale Earmv8 -V release_gaf57174_build_Fed_Earmv8)
+
+This build includes direct support of the following derivatives:
+- S32G274 (PS32G274ABVUC 0P77B SBAA2030A)
+
+Demo application test was executed on Windows 10 with:
+- Daughter Card: S32G-PROCEVB-S PCB RevX3 SCH RevB1 
+- Mother Board: S32GRV-PLATEVB PCB RevA SCH RevB
+
+The following topics are covered:
+1. Compiler options for NXP GCC
+2. Support Information
+3. Development hardware and software recommendations
+4. What's new?
+5. Known issues/limitations
+6. Release History
+-------------------------------------------------------------------------------
+1. Compiler options for NXP GCC
+1.1 C compiler options:
+  -mcpu=cortex-a53                      # Select the Arm Cortex Core.
+  -std=c99                              # Specifies C99 with extensions.
+  -c                                    # Compile or assemble the source files, but do not link.
+  -Os                                   # Optimize for size.
+  -ggdb3                                # Produce debugging information for use by GDB.
+  -mlittle-endian                       # Generate little-endian code.
+  -Wall -Wextra                         # Enable all the warnings about constructions that some
+                                        # users consider questionable.
+                                        # Enables some extra warning flags that are not enabled by "-Wall".
+  -Wstrict-prototypes                   # Warn if a function is declared or defined without.
+                                        # specifying the argument types.
+  -Wunused                              # All the -Wunused options combined:
+                                        # parameter, variable, label, function, typedef, value
+  -Werror=implicit-function-declaration # Hard error when a function is used before
+                                        # being declared.
+  -Wsign-compare                        # Produce warnings when comparing signed type with unsigned type.
+  -Wundef                               # Warn if an undefined identifier is evaluated in an #if directive.
+                                        # Such identifiers are replaced with zero.
+  -fno-short-enums                      # Specifies that the size of an enumeration type is at least 32 bits
+                                        # regardless of the size of the enumerator values.
+  -funsigned-char                       # Let the type char be unsigned, like unsigned char.
+  -funsigned-bitfields                  # Bitfelds declared with an integer type are unsigned.
+  -fstack-usage                         # Geneates an extra file that specifies the maximum amount of
+                                        # stack used, on a per-function basis.
+  -fdump-ipa-all                        # Enables all inter-procedural analysis dumps.
+  -fno-common                           # Specifes that the compiler should place uninitialized.
+  -pedantic                             # Issue all the warnings demanded by strict ISO C.
+  --sysroot=$(Path)                     # Specifies the path to the sysroot,
+                                        # for example: Path=$(TOOLCHAIN_DIR)/arm-none-eabi/newlib.
+  -specs=nosys.specs                    # Do not use printf/scanf.
+
+1.2 Assembler options:
+  -mcpu=cortex-a53                      # Select the Arm Cortex Core.
+  -c                                    # Compile or assemble the source files,
+                                        # but do not link.
+  -x assembler-with-cpp                 # Treat all files as assembly requiring preprocessing.
+
+
+1.3 Linker options:
+  --entry=<entry_symbol>                # Make the symbol <entry_symbol> be treated as a root symbol
+                                        # and the start label of the application.
+  -T <linker_file.ld>                   # Use the specified linker file.
+  -Wl, -Map=<map_file>                  # Produce a map file.
+  -nostartfiles                         # Do not use toolchain startup files.
+  -mcpu=cortex-a53                      # Select the Arm Cortex Core.
+  -ggdb3                                # Produce debugging information for use by GDB.
+  -mlittle-endian                       # Generate code for a processor running in little-endian mode.
+  --sysroot=$(newlib)                   # Specifies the path to the sysroot.
+  -specs=nosys.specs                    # Do not use printf/scanf.
+
+-------------------------------------------------------------------------------
+2. Support Information
+
+To order NXP products or literature, consult your local sales
+representative.
+
+For technical support please use the following Web address:
+    http://www.nxp.com/support
+
+-------------------------------------------------------------------------------
+3. Development hardware and software recommendations
+
+It is strongly recommended the GNU make version used for building is
+version 4.2.1.
+
+The CygWin package with make utility shall be properly installed and path to
+CygWin binaries shall be in the PATH variable. Build of demo application must be
+done in Cygwin's bash environment.
+
+-------------------------------------------------------------------------------
+4. What's new?
+
+This release adds support for S32G274 A53 core on FreeRTOS v10.4.6, and support
+A64 instruction set
+
+The following Jira ticket has been implemented:
+  - FREERTOS-350: [A53][Demo] Create demo FreeRTOS S32G2 A53
+
+-------------------------------------------------------------------------------
+5. Known issues/limitations:
+
+The demo uses default clock source and there is no clock configuration.
+
+-------------------------------------------------------------------------------
+6. Release History:
+

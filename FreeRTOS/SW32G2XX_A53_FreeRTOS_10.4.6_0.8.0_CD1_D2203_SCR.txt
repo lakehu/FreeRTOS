@@ -1,0 +1,19 @@
+NXP Software Content Register
+======================
+Release Name: SW32G2XX_A53_FreeRTOS_10.4.6_0.8.0_CD1_D2203, Version: 0.8.0 CD1
+Outgoing License: LA_OPT_NXP_Software_License v34 February 2022
+
+SW32G2XX_A53_FreeRTOS_10.4.6_0.8.0_CD1_D2203
+--------
+Description: SW32G2XX_A53_FreeRTOS_10.4.6_0.8.0_CD1_D2203
+Author: NXP
+License: LA_OPT_NXP_SOFTWARE_License - Additional distribution license granted, license in Section 2.3 applies
+Format: mixed format, software as sources
+
+FreeRTOS Real Time Kernel
+--------
+Description: FreeRTOS Real Time Kernel
+Version: 10.4.6
+Link: http://sourceforge.net/projects/freertos/
+License: MIT License
+Format: source
